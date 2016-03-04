@@ -1,4 +1,4 @@
-![alt text](https://github.com/soulduse/android-lotto-project/tree/master/art)
+![alt text](https://github.com/soulduse/android-lotto-project/tree/master/art/icon.png)
 
 개인 프로젝트 - 로또
 ===================================
