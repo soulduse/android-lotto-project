@@ -7,7 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.soul.android.designlibdemo.R;
+import com.soul.android.R;
 
 /**
  * Created by sould on 2016-03-03.

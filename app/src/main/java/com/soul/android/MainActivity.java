@@ -31,12 +31,12 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
 import com.soul.android.data.NumberData;
-import com.soul.android.designlibdemo.R;
 import com.soul.android.parser.JsonParser;
 import com.soul.android.utils.SQLiteHelper;
 import com.soul.android.view.CheeseListFragment;
@@ -67,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         try{
             jsonParser.settingData();
             dataList = sqLiteHelper.selectAll();
+            Log.d("list size ? >> ", dataList.size()+"");
         }catch (Exception e){
             e.printStackTrace();
         }

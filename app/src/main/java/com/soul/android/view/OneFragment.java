@@ -8,8 +8,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.soul.android.R;
 import com.soul.android.data.NumberData;
-import com.soul.android.designlibdemo.R;
 import com.soul.android.adapter.RecyclerViewAdapter;
 
 import java.util.List;

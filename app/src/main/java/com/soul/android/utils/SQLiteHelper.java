@@ -2,10 +2,12 @@ package com.soul.android.utils;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.res.AssetManager;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 import com.soul.android.data.NumberData;
 
@@ -13,17 +15,17 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by sould on 2016-03-03.
  */
-public class SQLiteHelper extends SQLiteOpenHelper {
+public class SQLiteHelper extends SQLiteOpenHelper implements FilePathDefine {
 
 	private Context context;
 	public static SQLiteHelper sqLiteHelper = null;
-	public static final String DATABASE_LOCATION = "data/data/com.soul.android/databases/";
 	public static final String DATABASE_NAME = "NumberData.db";
 	public static final String TABLE_NAME = "Lotto_table";
 	public static final int DB_VERSION = 1;
@@ -54,12 +56,12 @@ public class SQLiteHelper extends SQLiteOpenHelper {
 	private SQLiteHelper(Context context) {
 		super(context, DATABASE_NAME, null, DB_VERSION);
 		this.context = context;
-		db = this.getWritableDatabase();
-		String packageName = context.getPackageName();
+//		db = getWritableDatabase();
 	}
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
+		/*
 		db.execSQL("create table " + TABLE_NAME + " ("
 				+ IDX + " INTEGER PRIMARY KEY AUTOINCREMENT, "
 				+ COL_0 + " INTEGER, "
@@ -75,37 +77,68 @@ public class SQLiteHelper extends SQLiteOpenHelper {
 				+ COL_10 + " INTEGER, "
 				+ COL_11 + " TEXT"
 				+ ")");
+		//*/
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
-		onCreate(db);
+//		db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+//		onCreate(db);
 	}
 
-	public void initalize(){
-		File folder = new File(DATABASE_LOCATION);
-		if(folder.exists()){}else{folder.mkdirs();}
-		AssetManager assetManager = context.getResources().getAssets();
-		File outFile = new File(DATABASE_LOCATION+"sample.sqlite");
-		InputStream is = null;
-		FileOutputStream fo = null;
-		long fileSize = 0;
-		try{
-			is = assetManager.open("sample.sqlite", AssetManager.ACCESS_BUFFER);
-			fileSize = is.available();
-			if(outFile.length() <= 0){
-				byte[] tempdata = new byte[(int)fileSize];
-				is.read(tempdata);
-				is.close();
-				outFile.createNewFile();
-				fo = new FileOutputStream(outFile);
-				fo.write(tempdata);
-				fo.close();
-			}else{}
-		}catch (IOException ie){
-			ie.printStackTrace();
+	public void createDatabase(){
+//		deleteDB(); // 데이터베이스 내용 삭제.
+		boolean dbExist = checkDataBase();
+		if(!dbExist){
+			this.getReadableDatabase();
+			try{
+				copyDatabase();
+			}finally {
+				this.close();
+			}
+		}else{
+
 		}
+	}
+
+	private boolean checkDataBase(){
+		try{
+			final String mPath = DB_PATH +DATABASE_NAME;
+			final File file = new File(mPath);
+			if(file.exists())
+				return true;
+			else
+				return false;
+		}catch (SQLiteException e){
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	// DB Copy
+	public void copyDatabase() {
+		try{
+			InputStream mInputStream = context.getAssets().open("database/"+DATABASE_NAME);
+			String outFileName = DB_PATH+DATABASE_NAME;
+			OutputStream mOutputStream = new FileOutputStream(outFileName);
+			byte[] buffer = new byte[1024];
+			int length;
+			while((length = mInputStream.read(buffer)) > 0){
+				mOutputStream.write(buffer, 0, length);
+			}
+			mOutputStream.flush();
+			mOutputStream.close();
+			mInputStream.close();
+		}catch (IOException ioe){
+			ioe.printStackTrace();
+		}
+	}
+
+	public boolean openDataBase() throws SQLException {
+		String mPath = context.getDatabasePath(DATABASE_NAME).getPath();
+		db = SQLiteDatabase.openDatabase(mPath, null,
+				SQLiteDatabase.OPEN_READWRITE);
+		return db.isOpen();
 	}
 
 	// 데이터 주입
@@ -129,6 +162,15 @@ public class SQLiteHelper extends SQLiteOpenHelper {
 			return false;
 		else
 			return true;
+	}
+
+	// DB가 있나 체크하기
+	public boolean isCheckDB(){
+		File file = new File(DB_PATH +DATABASE_NAME);
+		if (file.exists()) {
+			return true;
+		}
+		return false;
 	}
 
 	// 데이터의 존재 유무 확인
@@ -214,11 +256,27 @@ public class SQLiteHelper extends SQLiteOpenHelper {
 		return maxDrwNo;
 	}
 
-	// DELETE
+	// DELETE DB
+	public void deleteDB(){
+		boolean fileExist = false;
+		File file = new File(DB_PATH +DATABASE_NAME);
+		file.delete();
+		Log.d("파일삭제결과 >> ", file.exists() + "");
+	}
+
+	// DELETE TABLE
 	public int deleteRecord(){
 		int deleteRecordCnt = db.delete(TABLE_NAME, null, null);
 
 		return deleteRecordCnt;
+	}
+
+	@Override
+	public synchronized void close() {
+		if (db != null)
+			db.close();
+		SQLiteDatabase.releaseMemory();
+		super.close();
 	}
 }
 

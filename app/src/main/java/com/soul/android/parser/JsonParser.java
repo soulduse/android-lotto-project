@@ -63,6 +63,9 @@ public class JsonParser implements ParserDefine{
 		@Override
 		protected void onPreExecute() {
 			super.onPreExecute();
+
+			myDb.createDatabase();
+			myDb.openDataBase();
 			pDialog = new ProgressDialog(context);
 			pDialog.setMessage("Please wait...");
 			pDialog.setCancelable(false);
@@ -79,35 +82,39 @@ public class JsonParser implements ParserDefine{
 			String jsonStr = makeServiceCall(BASE_URL);
 			String parserJsonStr = null;
 			Log.d(log, "jsonData >> " + jsonStr);
-			myDb.initalize();
-			myDb.deleteRecord(); 	// SQLite Data Delete
+//			myDb.initalize();
 			//*
 			if(jsonStr != null){
 				try{
-
 					int number = objectMapper.readValue(jsonStr, NumberData.class).getDrwNo();
-					if(myDb.selectAll().size() == 0){	// 데이터가 없을 경우 전체 데이터 주입
+					/*
+					// 데이터가 없을 경우 전체 데이터 주입
+					// But, Assets Folder에 데이터 db를 미리 넣고 호출하기 때문에 필요없어짐.
+					if(myDb.selectAll().size() == 0){
 						for(int i=1; i<=number; i++){
 							publishProgress(i,number);
 							parserJsonStr = makeServiceCall(APPOINT_URL + i);
 							dataInput(parserJsonStr);
 						}
-					}else{
-						if(!myDb.isSelectData(number)){
-							dataInput(jsonStr);
-						}else{
-//							Toast.makeText(context, "데이터베이스 정보가 최신상태 입니다.", Toast.LENGTH_LONG).show();
-							Log.d(log, "데이터베이스 정보가 최신상태 입니다.");
-						}
 					}
+					//*/
 
-					getListPrint(); // 데이터 출력
+					// SQLite에 현재 추첨 번호가 있는지 확인 후, 없다면 후 DB에 저장된 가장 최신 값부터 현재 추첨번호 까지 저장
+					if(!myDb.isSelectData(number)){
+						int currentNum = myDb.getMaxDrwNo();
+						for(int i=currentNum; i<=number; i++){
+							publishProgress(i,number);
+							parserJsonStr = makeServiceCall(APPOINT_URL + i);
+							dataInput(parserJsonStr);
+						}
+					}else{
+						Log.d(log, "데이터베이스 정보가 최신상태 입니다.");
+					}
+//					getListPrint(); // 데이터 출력
 				}catch (IOException ie){
 					ie.printStackTrace();
 				}
 			}
-
-
 			//*/
 			return null;
 		}
@@ -125,14 +132,15 @@ public class JsonParser implements ParserDefine{
 			//insert success - true
 			//fail - false
 			lottoData = objectMapper.readValue(jsonVal, NumberData.class);
+			// 하나의 로또 Map 데이터
 			Map<String,Object> m = objectMapper.readValue(jsonVal, new TypeReference<Map<String, Object>>(){});
 			dataList.add(m);
-			Log.d("MapData >>", m.toString());
 			isInserted = myDb.insertData(lottoData);
 
 			return isInserted;
 		}
 
+		// ObjectMapper를 활용하여 List에 모든 JSON 데이터를 담고 JSON 화 하였다.
 		public void getListPrint() throws IOException {
 			String dataAll = objectMapper.writeValueAsString(dataList);
 			fileManager.save(dataAll);

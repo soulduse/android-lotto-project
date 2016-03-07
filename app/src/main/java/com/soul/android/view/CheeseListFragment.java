@@ -31,9 +31,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.soul.android.R;
 import com.soul.android.data.Cheeses;
-import com.soul.android.designlibdemo.R;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;

@@ -16,7 +16,8 @@
 
 package com.soul.android.data;
 
-import com.soul.android.designlibdemo.R;
+
+import com.soul.android.R;
 
 import java.util.Random;
 
