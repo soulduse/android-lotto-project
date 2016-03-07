@@ -1,8 +1,12 @@
 package com.soul.android.data;
 
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+
 /**
  * Created by sould on 2016-03-03.
  */
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class NumberData {
 
 	private int bnusNo;

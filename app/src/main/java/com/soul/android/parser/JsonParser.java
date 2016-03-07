@@ -8,8 +8,13 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.soul.android.data.NumberData;
+import com.soul.android.utils.FileManager;
 import com.soul.android.utils.SQLiteHelper;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -23,6 +28,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by sould on 2016-03-03.
@@ -34,11 +40,17 @@ public class JsonParser implements ParserDefine{
 	private ProgressDialog 	pDialog = null;
 	private NumberData 		lottoData;
 	private SQLiteHelper	myDb;
+	private ObjectMapper objectMapper;
+	private List<Map<String,Object>> dataList = null;
+	private FileManager fileManager = null;
 
 	public JsonParser(ProgressDialog pDialog, Context context){
 		this.pDialog = pDialog;
 		this.context = context;
 		myDb = SQLiteHelper.getInstance(context);
+		objectMapper = new ObjectMapper();
+		dataList = new ArrayList<>();
+		fileManager = new FileManager(context);
 	}
 
 	public void settingData() throws Exception{
@@ -67,17 +79,17 @@ public class JsonParser implements ParserDefine{
 			String jsonStr = makeServiceCall(BASE_URL);
 			String parserJsonStr = null;
 			Log.d(log, "jsonData >> " + jsonStr);
-//			myDb.deleteRecord(); 	// SQLite Data Delete
+			myDb.initalize();
+			myDb.deleteRecord(); 	// SQLite Data Delete
 			//*
 			if(jsonStr != null){
 				try{
-					JSONObject jsonObj   = new JSONObject(jsonStr);
-					int number = jsonObj.getInt(LOTTODATE.DRWNO);
+
+					int number = objectMapper.readValue(jsonStr, NumberData.class).getDrwNo();
 					if(myDb.selectAll().size() == 0){	// 데이터가 없을 경우 전체 데이터 주입
 						for(int i=1; i<=number; i++){
 							publishProgress(i,number);
-							parserJsonStr = null;
-							parserJsonStr = makeServiceCall(APPOINT_URL+i);
+							parserJsonStr = makeServiceCall(APPOINT_URL + i);
 							dataInput(parserJsonStr);
 						}
 					}else{
@@ -88,10 +100,14 @@ public class JsonParser implements ParserDefine{
 							Log.d(log, "데이터베이스 정보가 최신상태 입니다.");
 						}
 					}
-				}catch (JSONException je){
-					je.printStackTrace();
+
+					getListPrint(); // 데이터 출력
+				}catch (IOException ie){
+					ie.printStackTrace();
 				}
 			}
+
+
 			//*/
 			return null;
 		}
@@ -105,22 +121,21 @@ public class JsonParser implements ParserDefine{
 		}
 
 		// JSON DATA DB INSERT
-		private void dataInput(String url) throws JSONException{
-			JSONObject insertObj   = new JSONObject(url);
-			lottoData = new NumberData();
-			lottoData.setBnusNo(insertObj.getInt(LOTTODATE.BNUSNO));
-			lottoData.setFirstWinamnt(insertObj.getLong(LOTTODATE.FIRSTWINAMNT));
-			lottoData.setTotSellamnt(insertObj.getLong(LOTTODATE.TOTSELLAMNT));
-			lottoData.setDrwtNo1(insertObj.getInt(LOTTODATE.DRWTNO1));
-			lottoData.setDrwtNo2(insertObj.getInt(LOTTODATE.DRWTNO2));
-			lottoData.setDrwtNo3(insertObj.getInt(LOTTODATE.DRWTNO3));
-			lottoData.setDrwtNo4(insertObj.getInt(LOTTODATE.DRWTNO4));
-			lottoData.setDrwtNo5(insertObj.getInt(LOTTODATE.DRWTNO5));
-			lottoData.setDrwtNo6(insertObj.getInt(LOTTODATE.DRWTNO6));
-			lottoData.setDrwNo(insertObj.getInt(LOTTODATE.DRWNO));
-			lottoData.setFirstPrzwnerCo(insertObj.getInt(LOTTODATE.FIRSTPRZWNERCO));
-			lottoData.setDrwNoDate(insertObj.getString(LOTTODATE.DRWNODATE));
+		private boolean dataInput(String jsonVal) throws IOException{
+			//insert success - true
+			//fail - false
+			lottoData = objectMapper.readValue(jsonVal, NumberData.class);
+			Map<String,Object> m = objectMapper.readValue(jsonVal, new TypeReference<Map<String, Object>>(){});
+			dataList.add(m);
+			Log.d("MapData >>", m.toString());
 			isInserted = myDb.insertData(lottoData);
+
+			return isInserted;
+		}
+
+		public void getListPrint() throws IOException {
+			String dataAll = objectMapper.writeValueAsString(dataList);
+			fileManager.save(dataAll);
 		}
 
 		// URL에서 JSON DATA 추출 메서드

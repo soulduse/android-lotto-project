@@ -2,12 +2,17 @@ package com.soul.android.utils;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import com.soul.android.data.NumberData;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +21,9 @@ import java.util.List;
  */
 public class SQLiteHelper extends SQLiteOpenHelper {
 
+	private Context context;
 	public static SQLiteHelper sqLiteHelper = null;
+	public static final String DATABASE_LOCATION = "data/data/com.soul.android/databases/";
 	public static final String DATABASE_NAME = "NumberData.db";
 	public static final String TABLE_NAME = "Lotto_table";
 	public static final int DB_VERSION = 1;
@@ -46,7 +53,9 @@ public class SQLiteHelper extends SQLiteOpenHelper {
 
 	private SQLiteHelper(Context context) {
 		super(context, DATABASE_NAME, null, DB_VERSION);
+		this.context = context;
 		db = this.getWritableDatabase();
+		String packageName = context.getPackageName();
 	}
 
 	@Override
@@ -72,6 +81,31 @@ public class SQLiteHelper extends SQLiteOpenHelper {
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
 		onCreate(db);
+	}
+
+	public void initalize(){
+		File folder = new File(DATABASE_LOCATION);
+		if(folder.exists()){}else{folder.mkdirs();}
+		AssetManager assetManager = context.getResources().getAssets();
+		File outFile = new File(DATABASE_LOCATION+"sample.sqlite");
+		InputStream is = null;
+		FileOutputStream fo = null;
+		long fileSize = 0;
+		try{
+			is = assetManager.open("sample.sqlite", AssetManager.ACCESS_BUFFER);
+			fileSize = is.available();
+			if(outFile.length() <= 0){
+				byte[] tempdata = new byte[(int)fileSize];
+				is.read(tempdata);
+				is.close();
+				outFile.createNewFile();
+				fo = new FileOutputStream(outFile);
+				fo.write(tempdata);
+				fo.close();
+			}else{}
+		}catch (IOException ie){
+			ie.printStackTrace();
+		}
 	}
 
 	// 데이터 주입
